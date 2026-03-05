@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Content Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --card: #1a1a26;
+    --accent: #00f5a0; --accent2: #7b5ea7;
+    --text: #e8e8f0; --muted: #6b6b80; --border: #2a2a3a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0,245,160,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 80% 80%, rgba(123,94,167,0.08) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
+
+  /* LOGIN */
+  #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+  #login-screen.hidden, #main-app.hidden { display: none; }
+  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 48px 40px; width: 100%; max-width: 440px; animation: fadeUp 0.6s ease; text-align: center; }
+  .login-logo { font-size: 48px; margin-bottom: 16px; }
+  .login-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .login-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; line-height: 1.6; }
+  .login-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; text-align: left; }
+  .btn-login { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--accent), #00c87a); border: none; border-radius: 12px; color: #0a0a0f; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all 0.3s; margin-top: 8px; }
+  .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,245,160,0.3); }
+  .login-error { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); border-radius: 8px; padding: 12px; color: #ff8080; font-size: 13px; margin-top: 12px; display: none; }
+  .login-error.visible { display: block; }
+  .login-hint { margin-top: 20px; font-size: 12px; color: var(--muted); font-family: 'Space Mono', monospace; line-height: 1.8; }
+  .login-hint a { color: var(--accent); text-decoration: none; }
+
+  /* HEADER */
+  header { text-align: center; margin-bottom: 36px; animation: fadeDown 0.6s ease; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 50px; padding: 8px 20px; margin-bottom: 16px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent); letter-spacing: 2px; }
+  .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  h1 { font-size: clamp(28px, 5vw, 48px); font-weight: 800; line-height: 1.1; margin-bottom: 12px; }
+  h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .subtitle { color: var(--muted); font-size: 15px; }
+  .user-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,245,160,0.1); border: 1px solid rgba(0,245,160,0.2); border-radius: 50px; padding: 6px 14px; font-size: 12px; color: var(--accent); font-family: 'Space Mono', monospace; margin-bottom: 20px; cursor: pointer; transition: all 0.2s; }
+  .user-badge:hover { background: rgba(255,80,80,0.1); border-color: rgba(255,80,80,0.3); color: #ff8080; }
+
+  /* NICHE CARDS */
+  .niche-selector { margin-bottom: 24px; animation: fadeUp 0.5s ease 0.05s both; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; font-family: 'Space Mono', monospace; margin-bottom: 14px; display: block; }
+  .niche-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 550px) { .niche-cards { grid-template-columns: 1fr; } }
+  .niche-card { background: var(--card); border: 2px solid var(--border); border-radius: 16px; padding: 20px 14px; text-align: center; cursor: pointer; transition: all 0.25s; user-select: none; }
+  .niche-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .niche-card.active { border-color: var(--accent); background: rgba(0,245,160,0.07); }
+  .niche-icon { font-size: 34px; margin-bottom: 8px; }
+  .niche-name { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
+  .niche-card.active .niche-name { color: var(--accent); }
+  .niche-desc { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  /* FORM */
+  .form-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px; margin-bottom: 24px; animation: fadeUp 0.6s ease 0.1s both; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; font-family: 'Space Mono', monospace; }
+  input, select, textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,245,160,0.1); }
+  select option { background: var(--surface); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* Suggestions */
+  .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .suggestion { background: var(--surface); border: 1px dashed var(--border); border-radius: 8px; padding: 5px 11px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.2s; font-family: 'Space Mono', monospace; }
+  .suggestion:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 7px 15px; font-size: 13px; cursor: pointer; transition: all 0.2s; user-select: none; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active { background: rgba(0,245,160,0.1); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+  /* Button */
+  .btn-generate { width: 100%; padding: 17px; background: linear-gradient(135deg, var(--accent), #00c87a); border: none; border-radius: 12px; color: #0a0a0f; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; letter-spacing: 1px; transition: all 0.3s; margin-top: 8px; }
+  .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,245,160,0.3); }
+  .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 40px; }
+  .loading.visible { display: block; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+
+  /* Results */
+  .results { display: none; animation: fadeUp 0.5s ease; }
+  .results.visible { display: block; }
+  .result-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 14px; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .result-title { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; font-family: 'Space Mono', monospace; }
+  .copy-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+  .copy-btn:hover, .copy-btn.copied { border-color: var(--accent); color: var(--accent); }
+  .result-content { color: var(--text); line-height: 1.8; white-space: pre-wrap; font-family: 'Space Mono', monospace; font-size: 13px; }
+  .hashtags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hashtag { background: rgba(123,94,167,0.15); border: 1px solid rgba(123,94,167,0.3); border-radius: 50px; padding: 6px 14px; font-size: 13px; color: #b39ddb; font-family: 'Space Mono', monospace; }
+
+  /* Error */
+  .error { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); border-radius: 10px; padding: 14px; color: #ff8080; font-size: 14px; margin-top: 14px; display: none; }
+  .error.visible { display: block; }
+
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">⚡</div>
+    <div class="login-title">TikTok Content Generator</div>
+    <p class="login-subtitle">Entrez votre code d'accès et votre clé API Anthropic pour commencer.</p>
+    <div class="login-field">
+      <label>🔐 Code d'accès</label>
+      <input type="password" id="access-code" placeholder="Votre code d'accès..." />
+    </div>
+    <div class="login-field">
+      <label>🔑 Clé API Anthropic</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+    </div>
+    <button class="btn-login" onclick="login()">ACCÉDER À L'OUTIL →</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">
+      Pas de clé API ? → <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
+      ~0,01€ par génération · Votre clé reste sur votre appareil
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" class="hidden">
+<div class="container">
+
+  <header>
+    <div class="logo"><div class="dot"></div>TIKTOK CONTENT AI</div>
+    <div class="user-badge" onclick="logout()">👤 <span id="user-label">Connecté</span> · Déconnexion</div>
+    <h1>Génère ton contenu<br><span>TikTok IA</span></h1>
+    <p class="subtitle">Script • Légende • Hashtags — en un clic</p>
+  </header>
+
+  <!-- NICHE -->
+  <div class="niche-selector">
+    <span class="section-label">🎯 Choisis ta niche</span>
+    <div class="niche-cards">
+      <div class="niche-card active" data-niche="tech" onclick="selectNiche(this)">
+        <div class="niche-icon">💻</div>
+        <div class="niche-name">Tech & Informatique</div>
+        <div class="niche-desc">Windows · IA · Cybersécurité</div>
+      </div>
+      <div class="niche-card" data-niche="medecine" onclick="selectNiche(this)">
+        <div class="niche-icon">🩺</div>
+        <div class="niche-name">Médecine & Santé</div>
+        <div class="niche-desc">Conseils · Symptômes · Bien-être</div>
+      </div>
+      <div class="niche-card" data-niche="plantes" onclick="selectNiche(this)">
+        <div class="niche-icon">🌿</div>
+        <div class="niche-name">Plantes & Culture</div>
+        <div class="niche-desc">Jardinage · Herbes · Cultivation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="field full">
+        <label>📝 Sujet de la vidéo</label>
+        <input type="text" id="theme" placeholder="Choisissez un sujet ou cliquez sur une suggestion..." />
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+      <div class="field">
+        <label>👥 Niveau du public</label>
+        <select id="niveau">
+          <option value="débutant">🟢 Débutant</option>
+          <option value="intermédiaire">🟡 Intermédiaire</option>
+          <option value="expert">🔴 Expert</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>⏱ Durée vidéo</label>
+        <select id="duree">
+          <option value="30">30 secondes</option>
+          <option value="60" selected>60 secondes</option>
+          <option value="90">90 secondes</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>🎭 Ton de la vidéo</label>
+        <div class="chips" id="ton-chips">
+          <div class="chip active" data-value="éducatif">📚 Éducatif</div>
+          <div class="chip" data-value="choquant">😱 Choquant</div>
+          <div class="chip" data-value="humour">😂 Humour</div>
+          <div class="chip" data-value="sérieux">🎯 Sérieux</div>
+          <div class="chip" data-value="motivant">🔥 Motivant</div>
+        </div>
+      </div>
+      <div class="field full">
+        <label>💡 Infos supplémentaires (optionnel)</label>
+        <textarea id="infos" placeholder="ex: Cibler les étudiants, mentionner une astuce peu connue..."></textarea>
+      </div>
+    </div>
+    <button class="btn-generate" id="btn-gen" onclick="generate()">⚡ GÉNÉRER LE CONTENU TIKTOK</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-family:'Space Mono',monospace;font-size:13px;">Génération en cours...</p>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-section">
+      <div class="result-header"><div class="result-title">🎬 Script TikTok</div><button class="copy-btn" onclick="copy('script-content',this)">Copier</button></div>
+      <div class="result-content" id="script-content"></div>
+    </div>
+    <div class="result-section">
+      <div class="result-header"><div class="result-title">📌 Titre accrocheur</div><button class="copy-btn" onclick="copy('title-content',this)">Copier</button></div>
+      <div class="result-content" id="title-content"></div>
+    </div>
+    <div class="result-section">
+      <div class="result-header"><div class="result-title">✍️ Légende</div><button class="copy-btn" onclick="copy('caption-content',this)">Copier</button></div>
+      <div class="result-content" id="caption-content"></div>
+    </div>
+    <div class="result-section">
+      <div class="result-header"><div class="result-title">#️⃣ Hashtags</div><button class="copy-btn" onclick="copy('hashtags-raw',this)">Copier</button></div>
+      <div class="hashtags" id="hashtags-content"></div>
+      <div id="hashtags-raw" style="display:none"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+  const ACCESS_CODES = {
+    "ytamimi": "Project26",
+    "messafi": "Project26",
+  };
+
+  const NICHES = {
+    tech: {
+      label: "Tech & Informatique",
+      expert: "expert TikTok Tech et Informatique",
+      suggestions: ["Astuce Windows 11", "ChatGPT prompt secret", "Cybersécurité mot de passe", "Raccourcis clavier", "IA gratuite méconnue", "Virus informatique expliqué"]
+    },
+    medecine: {
+      label: "Médecine & Santé",
+      expert: "expert médical et santé grand public",
+      suggestions: ["Symptômes à ne pas ignorer", "Aliments anti-inflammatoires", "Sommeil et santé", "Stress et cortisol", "Carence en vitamine D", "Prévention diabète type 2"]
+    },
+    plantes: {
+      label: "Plantes & Culture",
+      expert: "expert jardinage, plantes et cultivation",
+      suggestions: ["Tomates en pot balcon", "Plantes dépolluantes intérieur", "Compost maison facile", "Herbes aromatiques cuisine", "Bouturage pour débutants", "Arrosage automatique DIY"]
+    }
+  };
+
+  let currentApiKey = "";
+  let currentNiche = "tech";
+
+  function login() {
+    const code = document.getElementById('access-code').value.trim();
+    const apiKey = document.getElementById('api-key-input').value.trim();
+    const errEl = document.getElementById('login-error');
+    if (!code || !apiKey) { errEl.textContent = "Veuillez remplir les deux champs."; errEl.classList.add('visible'); return; }
+    const userName = Object.keys(ACCESS_CODES).find(u => ACCESS_CODES[u] === code);
+    if (!userName) { errEl.textContent = "❌ Code d'accès invalide."; errEl.classList.add('visible'); return; }
+    if (!apiKey.startsWith('sk-ant-')) { errEl.textContent = "❌ Clé API invalide (doit commencer par sk-ant-)"; errEl.classList.add('visible'); return; }
+    currentApiKey = apiKey;
+    document.getElementById('user-label').textContent = userName;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('main-app').classList.remove('hidden');
+  }
+
+  function logout() {
+    currentApiKey = "";
+    document.getElementById('access-code').value = '';
+    document.getElementById('api-key-input').value = '';
+    document.getElementById('login-error').classList.remove('visible');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('main-app').classList.add('hidden');
+    document.getElementById('results').classList.remove('visible');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('login-screen').classList.contains('hidden')) login();
+  });
+
+  function selectNiche(el) {
+    document.querySelectorAll('.niche-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    currentNiche = el.dataset.niche;
+    updateSuggestions();
+    document.getElementById('theme').value = '';
+    document.getElementById('results').classList.remove('visible');
+  }
+
+  function updateSuggestions() {
+    const container = document.getElementById('suggestions');
+    container.innerHTML = '';
+    NICHES[currentNiche].suggestions.forEach(s => {
+      const el = document.createElement('div');
+      el.className = 'suggestion';
+      el.textContent = s;
+      el.onclick = () => document.getElementById('theme').value = s;
+      container.appendChild(el);
+    });
+  }
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
+  async function generate() {
+    const theme = document.getElementById('theme').value.trim();
+    if (!theme) { showError("Veuillez entrer un sujet !"); return; }
+    const niveau = document.getElementById('niveau').value;
+    const duree = document.getElementById('duree').value;
+    const ton = document.querySelector('.chip.active')?.dataset.value || 'éducatif';
+    const infos = document.getElementById('infos').value.trim();
+    const niche = NICHES[currentNiche];
+
+    hideError(); showLoading(true);
+    document.getElementById('btn-gen').disabled = true;
+    document.getElementById('results').classList.remove('visible');
+
+    const prompt = `Tu es un ${niche.expert} spécialisé en création de contenu TikTok viral.
+
+Génère du contenu TikTok pour :
+- Niche : ${niche.label}
+- Sujet : ${theme}
+- Niveau public : ${niveau}
+- Durée : ${duree} secondes
+- Ton : ${ton}
+${infos ? `- Infos supplémentaires : ${infos}` : ''}
+
+Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
+{
+  "script": "Script complet avec [PAUSE] [ACCÉLÈRE] [MONTRE IMAGE] etc. Chaque phrase sur une nouvelle ligne. Accrocheur dès la 1ère seconde.",
+  "titre": "Titre ultra-accrocheur avec emoji (max 10 mots)",
+  "legende": "Légende TikTok engageante avec appel à l'action (2-3 phrases)",
+  "hashtags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10"]
+}`;
+
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": currentApiKey },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
+      });
+      const data = await res.json();
+      const text = data.content.map(i => i.text || "").join("");
+      let parsed;
+      try { parsed = JSON.parse(text.replace(/```json|```/g, "").trim()); }
+      catch(e) { showError("Erreur de parsing. Réessayez."); return; }
+
+      document.getElementById('script-content').textContent = parsed.script;
+      document.getElementById('title-content').textContent = parsed.titre;
+      document.getElementById('caption-content').textContent = parsed.legende;
+
+      const hc = document.getElementById('hashtags-content');
+      hc.innerHTML = '';
+      const raw = parsed.hashtags.map(h => h.startsWith('#') ? h : '#'+h);
+      parsed.hashtags.forEach((tag, i) => {
+        const el = document.createElement('div');
+        el.className = 'hashtag'; el.textContent = raw[i]; hc.appendChild(el);
+      });
+      document.getElementById('hashtags-raw').textContent = raw.join(' ');
+      document.getElementById('results').classList.add('visible');
+    } catch(e) {
+      showError("Erreur de connexion à l'API.");
+    } finally {
+      showLoading(false);
+      document.getElementById('btn-gen').disabled = false;
+    }
+  }
+
+  function showLoading(v) { document.getElementById('loading').classList.toggle('visible', v); }
+  function showError(msg) { const el = document.getElementById('error'); el.textContent = msg; el.classList.add('visible'); }
+  function hideError() { document.getElementById('error').classList.remove('visible'); }
+  function copy(id, btn) {
+    navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+      btn.textContent = '✓ Copié !'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  updateSuggestions();
+</script>
+</body>
+</html>
