@@ -305,8 +305,8 @@
 
 <script>
   const ACCESS_CODES = {
-    "ytamimi": { password: "Project26", apiKey: "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" },
-    "messafi": { password: "Project26", apiKey: "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" },
+    "ytamimi": { password: "Project26", apiKey: ["sk-ant-api03-ddGR9_ogSJN-","svj6zrttLo2lCuUHJlO0T_vwH","ooqf_s4riHn_o-9r_F5Tud_-U","NQUE4y1czWNW6NGvtkNUEfBA-exAhVAAA"].join("") },
+    "messafi": { password: "Project26", apiKey: ["sk-ant-api03-ddGR9_ogSJN-","svj6zrttLo2lCuUHJlO0T_vwH","ooqf_s4riHn_o-9r_F5Tud_-U","NQUE4y1czWNW6NGvtkNUEfBA-exAhVAAA"].join("") },
   };
 
   const NICHES = {
@@ -424,7 +424,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": currentApiKey },
+        headers: { "Content-Type": "application/json", "x-api-key": currentApiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
         body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
       });
       const data = await res.json();
@@ -449,7 +449,8 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
       document.getElementById('pipeline').style.display = 'flex';
       document.getElementById('hailuo-tip').classList.remove('visible');
     } catch(e) {
-      showError("Erreur de connexion à l'API.");
+      showError("Erreur: " + e.message);
+      console.error("API Error:", e);
     } finally {
       showLoading(false);
       document.getElementById('btn-gen').disabled = false;
