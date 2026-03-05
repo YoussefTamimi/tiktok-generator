@@ -428,6 +428,11 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
         body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
       });
       const data = await res.json();
+      console.log("API Response:", JSON.stringify(data));
+      if (!data.content) {
+        showError("Erreur API: " + (data.error?.message || JSON.stringify(data)));
+        return;
+      }
       const text = data.content.map(i => i.text || "").join("");
       let parsed;
       try { parsed = JSON.parse(text.replace(/```json|```/g, "").trim()); }
