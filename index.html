@@ -149,30 +149,26 @@
 <body>
 
 <!-- LOGIN -->
-<div id="login-screen" style="display:none">
+<div id="login-screen">
   <div class="login-card">
     <div class="login-logo">⚡</div>
     <div class="login-title">TikTok Content Generator</div>
     <p class="login-subtitle">Entrez votre code d'accès et votre clé API Anthropic pour commencer.</p>
     <div class="login-field">
-      <label>🔐 Code d'accès</label>
-      <input type="password" id="access-code" placeholder="Votre code d'accès..." />
+      <label>👤 Identifiant</label>
+      <input type="text" id="username-input" placeholder="Votre identifiant..." autocomplete="username" />
     </div>
     <div class="login-field">
-      <label>🔑 Clé API Anthropic</label>
-      <input type="password" id="api-key-input" placeholder="sk-ant-..." />
+      <label>🔐 Mot de passe</label>
+      <input type="password" id="access-code" placeholder="Votre mot de passe..." autocomplete="current-password" />
     </div>
-    <button class="btn-login" onclick="login()">ACCÉDER À L'OUTIL →</button>
+    <button class="btn-login" onclick="login()">CONNEXION →</button>
     <div class="login-error" id="login-error"></div>
-    <div class="login-hint">
-      Pas de clé API ? → <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a><br>
-      ~0,01€ par génération · Votre clé reste sur votre appareil
-    </div>
   </div>
 </div>
 
 <!-- MAIN APP -->
-<div id="main-app">
+<div id="main-app" class="hidden">
 <div class="container">
 
   <header>
@@ -309,8 +305,8 @@
 
 <script>
   const ACCESS_CODES = {
-    "ytamimi": "Project26",
-    "messafi": "Project26",
+    "ytamimi": { password: "Project26", apiKey: "VOTRE_CLE_API_ICI" },
+    "messafi": { password: "Project26", apiKey: "VOTRE_CLE_API_ICI" },
   };
 
   const NICHES = {
@@ -335,27 +331,31 @@
   let currentNiche = "tech";
 
   function login() {
+    const username = document.getElementById('username-input').value.trim().toLowerCase();
     const code = document.getElementById('access-code').value.trim();
-    const apiKey = document.getElementById('api-key-input').value.trim();
     const errEl = document.getElementById('login-error');
-    if (!code || !apiKey) { errEl.textContent = "Veuillez remplir les deux champs."; errEl.classList.add('visible'); return; }
-    const userName = Object.keys(ACCESS_CODES).find(u => ACCESS_CODES[u] === code);
-    if (!userName) { errEl.textContent = "❌ Code d'accès invalide."; errEl.classList.add('visible'); return; }
-    if (!apiKey.startsWith('sk-ant-')) { errEl.textContent = "❌ Clé API invalide (doit commencer par sk-ant-)"; errEl.classList.add('visible'); return; }
-    currentApiKey = apiKey;
-    document.getElementById('user-label').textContent = userName;
+
+    if (!username || !code) { errEl.textContent = "Veuillez remplir les deux champs."; errEl.classList.add('visible'); return; }
+
+    // Check username exists and password matches
+    if (!ACCESS_CODES[username]) { errEl.textContent = "❌ Identifiant inconnu."; errEl.classList.add('visible'); return; }
+    if (ACCESS_CODES[username].password !== code) { errEl.textContent = "❌ Mot de passe incorrect."; errEl.classList.add('visible'); return; }
+
+    currentApiKey = ACCESS_CODES[username].apiKey;
+    document.getElementById('user-label').textContent = username;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
   }
 
   function logout() {
     currentApiKey = "";
+    document.getElementById('username-input').value = '';
     document.getElementById('access-code').value = '';
-    document.getElementById('api-key-input').value = '';
     document.getElementById('login-error').classList.remove('visible');
     document.getElementById('login-screen').classList.remove('hidden');
     document.getElementById('main-app').classList.add('hidden');
     document.getElementById('results').classList.remove('visible');
+    document.getElementById('pipeline').style.display = 'none';
   }
 
   document.addEventListener('keydown', e => {
