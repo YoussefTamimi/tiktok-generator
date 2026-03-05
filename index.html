@@ -108,6 +108,38 @@
   .error { background: rgba(255,80,80,0.1); border: 1px solid rgba(255,80,80,0.3); border-radius: 10px; padding: 14px; color: #ff8080; font-size: 14px; margin-top: 14px; display: none; }
   .error.visible { display: block; }
 
+  /* Hailuo button */
+  .btn-hailuo {
+    width: 100%; padding: 17px;
+    background: linear-gradient(135deg, #ff3d6b, #ff6b35);
+    border: none; border-radius: 12px; color: #fff;
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800;
+    cursor: pointer; letter-spacing: 1px; transition: all 0.3s;
+    margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-hailuo:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(255,61,107,0.4); }
+
+  .pipeline-steps {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .step {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 50px; padding: 8px 16px;
+    font-size: 12px; font-family: 'Space Mono', monospace; color: var(--muted);
+  }
+  .step.done { border-color: var(--accent); color: var(--accent); background: rgba(0,245,160,0.07); }
+  .step.active { border-color: #ff3d6b; color: #ff3d6b; background: rgba(255,61,107,0.07); }
+  .step-arrow { color: var(--muted); font-size: 14px; }
+
+  .hailuo-tip {
+    background: rgba(255,61,107,0.07); border: 1px solid rgba(255,61,107,0.2);
+    border-radius: 12px; padding: 16px; margin-top: 12px;
+    font-size: 13px; color: #ffb3c1; font-family: 'Space Mono', monospace;
+    line-height: 1.8; display: none;
+  }
+  .hailuo-tip.visible { display: block; }
+
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -117,7 +149,7 @@
 <body>
 
 <!-- LOGIN -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <div class="login-card">
     <div class="login-logo">⚡</div>
     <div class="login-title">TikTok Content Generator</div>
@@ -140,7 +172,7 @@
 </div>
 
 <!-- MAIN APP -->
-<div id="main-app" class="hidden">
+<div id="main-app">
 <div class="container">
 
   <header>
@@ -220,6 +252,15 @@
     <p style="color:var(--muted);font-family:'Space Mono',monospace;font-size:13px;">Génération en cours...</p>
   </div>
 
+  <!-- PIPELINE -->
+  <div class="pipeline-steps" id="pipeline" style="display:none">
+    <div class="step done">✅ 1. Contenu généré</div>
+    <div class="step-arrow">→</div>
+    <div class="step active">🎬 2. Créer la vidéo</div>
+    <div class="step-arrow">→</div>
+    <div class="step">📱 3. Publier TikTok</div>
+  </div>
+
   <div class="results" id="results">
     <div class="result-section">
       <div class="result-header"><div class="result-title">🎬 Script TikTok</div><button class="copy-btn" onclick="copy('script-content',this)">Copier</button></div>
@@ -238,6 +279,29 @@
       <div class="hashtags" id="hashtags-content"></div>
       <div id="hashtags-raw" style="display:none"></div>
     </div>
+
+    <!-- HAILUO BUTTON -->
+    <div class="result-section" style="border-color: rgba(255,61,107,0.3); background: rgba(255,61,107,0.04);">
+      <div class="result-header">
+        <div class="result-title" style="color:#ff3d6b;">🎬 Étape 2 — Créer la vidéo</div>
+      </div>
+      <p style="color:var(--muted); font-size:13px; font-family:'Space Mono',monospace; margin-bottom:14px; line-height:1.7;">
+        Le script est prêt ! Cliquez ci-dessous pour ouvrir <strong style="color:#ff3d6b">Hailuo AI</strong>.<br>
+        Le prompt sera copié automatiquement dans votre presse-papier 📋
+      </p>
+      <button class="btn-hailuo" onclick="openHailuo()">
+        🚀 CRÉER LA VIDÉO SUR HAILUO AI →
+      </button>
+      <div class="hailuo-tip" id="hailuo-tip">
+        ✅ Prompt copié !<br><br>
+        Sur Hailuo AI :<br>
+        1️⃣ Collez le prompt (Ctrl+V ou appui long → Coller)<br>
+        2️⃣ Cliquez sur <strong>Generate</strong><br>
+        3️⃣ Téléchargez la vidéo<br>
+        4️⃣ Publiez sur TikTok 🎉
+      </div>
+    </div>
+
   </div>
 
 </div>
@@ -267,7 +331,7 @@
     }
   };
 
-  let currentApiKey = "";
+  let currentApiKey = ""; // ← Remplacez par votre clé sk-ant-... pour tester
   let currentNiche = "tech";
 
   function login() {
@@ -382,6 +446,8 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
       });
       document.getElementById('hashtags-raw').textContent = raw.join(' ');
       document.getElementById('results').classList.add('visible');
+      document.getElementById('pipeline').style.display = 'flex';
+      document.getElementById('hailuo-tip').classList.remove('visible');
     } catch(e) {
       showError("Erreur de connexion à l'API.");
     } finally {
@@ -401,6 +467,31 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
   }
 
   updateSuggestions();
+
+  function openHailuo() {
+    const script = document.getElementById('script-content').textContent;
+    const titre = document.getElementById('title-content').textContent;
+    const niche = NICHES[currentNiche].label;
+
+    const prompt = `Crée une vidéo TikTok verticale (9:16) de style ${niche}.
+Titre : ${titre}
+Script à narrer en voix off :
+${script}
+Style : cinématique, dynamique, adapté TikTok, sous-titres inclus.`;
+
+    navigator.clipboard.writeText(prompt).then(() => {
+      document.getElementById('hailuo-tip').classList.add('visible');
+      setTimeout(() => {
+        window.open('https://hailuoai.video/video', '_blank');
+      }, 800);
+    }).catch(() => {
+      // Fallback si clipboard échoue
+      window.open('https://hailuoai.video/video', '_blank');
+    });
+
+    // Show pipeline
+    document.getElementById('pipeline').style.display = 'flex';
+  }
 </script>
 </body>
 </html>
