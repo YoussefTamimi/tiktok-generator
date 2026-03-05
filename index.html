@@ -160,7 +160,14 @@
     </div>
     <div class="login-field">
       <label>🔐 Mot de passe</label>
-      <input type="password" id="access-code" placeholder="Votre mot de passe..." autocomplete="current-password" />
+      <div style="position:relative">
+        <input type="password" id="access-code" placeholder="Votre mot de passe..." autocomplete="current-password" style="padding-right:48px" />
+        <button onclick="togglePassword()" id="eye-btn" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);">👁️</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;text-align:left">
+      <input type="checkbox" id="remember-me" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer" />
+      <label for="remember-me" style="font-size:13px;color:var(--muted);cursor:pointer;letter-spacing:0;text-transform:none;font-family:'Syne',sans-serif">Se souvenir de moi</label>
     </div>
     <button class="btn-login" onclick="login()">CONNEXION →</button>
     <div class="login-error" id="login-error"></div>
@@ -342,6 +349,14 @@
     if (ACCESS_CODES[username].password !== code) { errEl.textContent = "❌ Mot de passe incorrect."; errEl.classList.add('visible'); return; }
 
     currentApiKey = ACCESS_CODES[username].apiKey;
+
+    // Remember me
+    if (document.getElementById('remember-me').checked) {
+      localStorage.setItem('tiktok_login', JSON.stringify({ username, password: code }));
+    } else {
+      localStorage.removeItem('tiktok_login');
+    }
+
     document.getElementById('user-label').textContent = username;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
@@ -367,6 +382,27 @@
     el.classList.add('active');
     currentNiche = el.dataset.niche;
     updateSuggestions();
+
+  // Toggle password visibility
+  function togglePassword() {
+    const input = document.getElementById('access-code');
+    const btn = document.getElementById('eye-btn');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁️';
+    }
+  }
+
+  // Load saved credentials
+  const saved = JSON.parse(localStorage.getItem('tiktok_login') || '{}');
+  if (saved.username) {
+    document.getElementById('username-input').value = saved.username;
+    document.getElementById('access-code').value = saved.password;
+    document.getElementById('remember-me').checked = true;
+  }
     document.getElementById('theme').value = '';
     document.getElementById('results').classList.remove('visible');
   }
@@ -473,6 +509,27 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks :
   }
 
   updateSuggestions();
+
+  // Toggle password visibility
+  function togglePassword() {
+    const input = document.getElementById('access-code');
+    const btn = document.getElementById('eye-btn');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁️';
+    }
+  }
+
+  // Load saved credentials
+  const saved = JSON.parse(localStorage.getItem('tiktok_login') || '{}');
+  if (saved.username) {
+    document.getElementById('username-input').value = saved.username;
+    document.getElementById('access-code').value = saved.password;
+    document.getElementById('remember-me').checked = true;
+  }
 
   function openHailuo() {
     const script = document.getElementById('script-content').textContent;
